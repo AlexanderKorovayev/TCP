@@ -16,19 +16,19 @@ type conn struct {
 func (c *conn) Write(p []byte) (n int, err error) {
 	c.updateDeadline()
 	n, err = c.Conn.Write(p)
-	return
+	return n, err
 }
 
 func (c *conn) Read(b []byte) (n int, err error) {
 	c.updateDeadline()
 	r := io.LimitReader(c.Conn, c.MaxReadBuffer)
 	n, err = r.Read(b)
-	return
+	return n, err
 }
 
 func (c *conn) Close() (err error) {
 	err = c.Conn.Close()
-	return
+	return err
 }
 
 func (c *conn) updateDeadline() {

@@ -10,11 +10,14 @@ import (
 // и ограничение по размеру данных
 // надо добиться правильной работы
 
+// запилю универсальный настраиваемый сервак
+// мы сделаем 4 паралельных обработчика а остальные пойдут в брокер сообщений
+
 func main() {
 	srv := shouter.Server{
 		Port:         ":2000",
 		IdleTimeout:  10 * time.Second,
-		MaxReadBytes: 0,
+		MaxReadBytes: 3,
 	}
 	srv.ListenAndServe()
 	//srv.Shutdown()

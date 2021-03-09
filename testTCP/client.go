@@ -21,9 +21,8 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-
+	reader := bufio.NewReader(os.Stdin)
 	for {
-		reader := bufio.NewReader(os.Stdin)
 		fmt.Print(">> ")
 		text, _ := reader.ReadString('\n')
 		fmt.Fprintf(c, text+"\n")

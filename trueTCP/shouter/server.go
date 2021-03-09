@@ -1,8 +1,8 @@
 package shouter
 
 import (
-	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"strings"
@@ -44,14 +44,14 @@ func (srv *Server) ListenAndServe() error {
 			continue
 		}
 		log.Printf("accepted connection from %v", newConn.RemoteAddr())
-		conn := &conn{
+		conn1 := &conn{
 			Conn:          newConn,
 			IdleTimeout:   srv.IdleTimeout,
 			MaxReadBuffer: srv.MaxReadBytes,
 		}
-		srv.trackConn(conn)
-		conn.SetDeadline(time.Now().Add(conn.IdleTimeout))
-		go srv.handle(conn)
+		srv.trackConn(conn1)
+		conn1.SetDeadline(time.Now().Add(conn1.IdleTimeout))
+		go srv.handle(conn1)
 	}
 	return nil
 }
@@ -71,18 +71,25 @@ func (srv *Server) handle(conn *conn) error {
 		conn.Close()
 		srv.deleteConn(conn)
 	}()
-	r := bufio.NewReader(conn)
-	w := bufio.NewWriter(conn)
-
+	data := make([]byte, 3)
 	for {
-		netData, err := r.ReadString('\n')
-		if err != nil {
-			fmt.Println(err)
+		i, err := conn.Read(data)
+
+		if err == io.EOF {
+			fmt.Println("--end-of-file--")
+			return err
+		} else if err != nil {
+			fmt.Println("Oops! Some error occured!", err)
 			return err
 		}
-		//w.WriteString(strings.ToUpper(scanr.Text()) + "\n")
-		w.WriteString(strings.ToUpper(netData) + "\n")
-		w.Flush()
+
+		if strings.TrimSpace(string(data[:i])) == "STOP" {
+			fmt.Println("Exiting TCP server!")
+			return nil
+		}
+		res := strings.ToUpper(string(data[:i]))
+		fmt.Print("-> ", res)
+		conn.Write([]byte(res))
 	}
 }
 
