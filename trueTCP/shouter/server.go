@@ -1,6 +1,7 @@
 package shouter
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"log"
@@ -45,9 +46,8 @@ func (srv *Server) ListenAndServe() error {
 		}
 		log.Printf("accepted connection from %v", newConn.RemoteAddr())
 		conn1 := &conn{
-			Conn:          newConn,
-			IdleTimeout:   srv.IdleTimeout,
-			MaxReadBuffer: srv.MaxReadBytes,
+			Conn:        newConn,
+			IdleTimeout: srv.IdleTimeout,
 		}
 		srv.trackConn(conn1)
 		conn1.SetDeadline(time.Now().Add(conn1.IdleTimeout))
@@ -71,9 +71,9 @@ func (srv *Server) handle(conn *conn) error {
 		conn.Close()
 		srv.deleteConn(conn)
 	}()
-	data := make([]byte, 3)
+
 	for {
-		i, err := conn.Read(data)
+		data, err := bufio.NewReader(conn).ReadString('\n')
 
 		if err == io.EOF {
 			fmt.Println("--end-of-file--")
@@ -83,11 +83,11 @@ func (srv *Server) handle(conn *conn) error {
 			return err
 		}
 
-		if strings.TrimSpace(string(data[:i])) == "STOP" {
+		if strings.TrimSpace(string(data)) == "STOP" {
 			fmt.Println("Exiting TCP server!")
 			return nil
 		}
-		res := strings.ToUpper(string(data[:i]))
+		res := strings.ToUpper(string(data))
 		fmt.Print("-> ", res)
 		conn.Write([]byte(res))
 	}

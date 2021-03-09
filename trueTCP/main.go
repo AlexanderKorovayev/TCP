@@ -15,9 +15,8 @@ import (
 
 func main() {
 	srv := shouter.Server{
-		Port:         ":2000",
-		IdleTimeout:  10 * time.Second,
-		MaxReadBytes: 3,
+		Port:        ":2000",
+		IdleTimeout: 10 * time.Second,
 	}
 	srv.ListenAndServe()
 	//srv.Shutdown()
