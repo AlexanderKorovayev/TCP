@@ -2,6 +2,7 @@ package shouter
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"net"
 	"strings"
@@ -10,7 +11,7 @@ import (
 )
 
 type Server struct {
-	Addr         string
+	Port         string
 	IdleTimeout  time.Duration
 	MaxReadBytes int64
 
@@ -21,12 +22,12 @@ type Server struct {
 }
 
 func (srv *Server) ListenAndServe() error {
-	addr := srv.Addr
-	if addr == "" {
-		addr = ":2000"
+	port := srv.Port
+	if port == "" {
+		port = ":2000"
 	}
-	log.Printf("starting server on %v\n", addr)
-	listener, err := net.Listen("tcp", addr)
+	log.Printf("starting server on %v\n", port)
+	listener, err := net.Listen("tcp", port)
 	if err != nil {
 		return err
 	}
@@ -72,30 +73,17 @@ func (srv *Server) handle(conn *conn) error {
 	}()
 	r := bufio.NewReader(conn)
 	w := bufio.NewWriter(conn)
-	scanr := bufio.NewScanner(r)
 
-	sc := make(chan bool)
-	deadline := time.After(conn.IdleTimeout)
 	for {
-		go func(s chan bool) {
-			s <- scanr.Scan()
-		}(sc)
-		select {
-		case <-deadline:
-			return nil
-		case scanned := <-sc:
-			if !scanned {
-				if err := scanr.Err(); err != nil {
-					return err
-				}
-				return nil
-			}
-			w.WriteString(strings.ToUpper(scanr.Text()) + "\n")
-			w.Flush()
-			deadline = time.After(conn.IdleTimeout)
+		netData, err := r.ReadString('\n')
+		if err != nil {
+			fmt.Println(err)
+			return err
 		}
+		//w.WriteString(strings.ToUpper(scanr.Text()) + "\n")
+		w.WriteString(strings.ToUpper(netData) + "\n")
+		w.Flush()
 	}
-	return nil
 }
 
 func (srv *Server) deleteConn(conn *conn) {

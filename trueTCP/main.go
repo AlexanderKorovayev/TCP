@@ -3,17 +3,19 @@ package main
 import (
 	"time"
 
-	"trueTCP/shouter"
+	"github.com/AlexanderKorovaev/TCP/trueTCP/shouter"
 )
+
+// проверил что работает ограничение по времени
+// и ограничение по размеру данных
+// надо добиться правильной работы
 
 func main() {
 	srv := shouter.Server{
-		Addr:         ":2000",
+		Port:         ":2000",
 		IdleTimeout:  10 * time.Second,
-		MaxReadBytes: 1000,
+		MaxReadBytes: 0,
 	}
-	go srv.ListenAndServe()
-	time.Sleep(10 * time.Second)
+	srv.ListenAndServe()
 	//srv.Shutdown()
-	select {}
 }
