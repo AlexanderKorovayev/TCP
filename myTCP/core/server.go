@@ -35,6 +35,7 @@ func (srv *Server) ListenAndServe() error {
 	srv.listener = listener
 	for {
 		// should be guarded by mu
+		// если в одном месте код меняет этот флаг то другие должны дождаться конца записи
 		if srv.inShutdown {
 			break
 		}
@@ -101,6 +102,7 @@ func (srv *Server) deleteConn(conn *conn) {
 //Shutdown функция для корректного завершения всех обработчиков
 func (srv *Server) Shutdown() {
 	// should be guarded by mu
+	// тут мы сохраняем новое значение, пока сохранячем его остальныые горутины не должны получать доступ
 	srv.inShutdown = true
 	log.Println("shutting down...")
 	srv.listener.Close()
