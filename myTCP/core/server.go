@@ -1,4 +1,4 @@
-package shouter
+package core
 
 import (
 	"bufio"
@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+//Server объект сервера
 type Server struct {
 	Port         string
 	IdleTimeout  time.Duration
@@ -22,11 +23,9 @@ type Server struct {
 	inShutdown bool
 }
 
+//ListenAndServe функция прослушивания подключений
 func (srv *Server) ListenAndServe() error {
 	port := srv.Port
-	if port == "" {
-		port = ":2000"
-	}
 	log.Printf("starting server on %v\n", port)
 	listener, err := net.Listen("tcp", port)
 	if err != nil {
@@ -45,13 +44,13 @@ func (srv *Server) ListenAndServe() error {
 			continue
 		}
 		log.Printf("accepted connection from %v", newConn.RemoteAddr())
-		conn1 := &conn{
+		connObj := &conn{
 			Conn:        newConn,
 			IdleTimeout: srv.IdleTimeout,
 		}
-		srv.trackConn(conn1)
-		conn1.SetDeadline(time.Now().Add(conn1.IdleTimeout))
-		go srv.handle(conn1)
+		srv.trackConn(connObj)
+		connObj.SetDeadline(time.Now().Add(connObj.IdleTimeout))
+		go srv.handle(connObj)
 	}
 	return nil
 }
@@ -71,7 +70,7 @@ func (srv *Server) handle(conn *conn) error {
 		conn.Close()
 		srv.deleteConn(conn)
 	}()
-
+	//return errors.New("Not implemented handler")
 	for {
 		data, err := bufio.NewReader(conn).ReadString('\n')
 
@@ -99,6 +98,7 @@ func (srv *Server) deleteConn(conn *conn) {
 	delete(srv.conns, conn)
 }
 
+//Shutdown функция для корректного завершения всех обработчиков
 func (srv *Server) Shutdown() {
 	// should be guarded by mu
 	srv.inShutdown = true

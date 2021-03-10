@@ -1,4 +1,4 @@
-package shouter
+package core
 
 import (
 	"net"
