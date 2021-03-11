@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+	"sync"
 	"time"
 
 	"github.com/AlexanderKorovaev/TCP/myTCP/core"
@@ -15,10 +17,17 @@ import (
 //4) лишние зарпосы помещать в брокер сообщений
 
 func main() {
+	var wg sync.WaitGroup
+	wg.Add(1)
 	srv := core.Server{
 		Port:        ":2000",
 		IdleTimeout: 10 * time.Second,
 	}
-	srv.ListenAndServe()
-	//srv.Shutdown()
+	go srv.ListenAndServe()
+	time.Sleep(5 * time.Second)
+	// если вызвать без таймаута то почему то падает
+	srv.Shutdown(wg)
+	log.Println("IN555")
+	wg.Wait()
+	log.Println("IN666")
 }

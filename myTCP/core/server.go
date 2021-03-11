@@ -2,7 +2,6 @@ package core
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -26,7 +25,6 @@ type Server struct {
 //ListenAndServe функция прослушивания подключений
 func (srv *Server) ListenAndServe() error {
 	port := srv.Port
-	log.Printf("starting server on %v\n", port)
 	listener, err := net.Listen("tcp", port)
 	if err != nil {
 		return err
@@ -34,17 +32,14 @@ func (srv *Server) ListenAndServe() error {
 	defer listener.Close()
 	srv.listener = listener
 	for {
-		// should be guarded by mu
-		// если в одном месте код меняет этот флаг то другие должны дождаться конца записи
 		if srv.inShutdown {
 			break
 		}
 		newConn, err := listener.Accept()
 		if err != nil {
-			log.Printf("error accepting connection %v", err)
+			log.Printf("ошибка получения соединения: %v", err)
 			continue
 		}
-		log.Printf("accepted connection from %v", newConn.RemoteAddr())
 		connObj := &conn{
 			Conn:        newConn,
 			IdleTimeout: srv.IdleTimeout,
@@ -67,7 +62,7 @@ func (srv *Server) trackConn(c *conn) {
 
 func (srv *Server) handle(conn *conn) error {
 	defer func() {
-		log.Printf("closing connection from %v", conn.RemoteAddr())
+		log.Printf("закрыто соединение: %v", conn.RemoteAddr())
 		conn.Close()
 		srv.deleteConn(conn)
 	}()
@@ -76,19 +71,17 @@ func (srv *Server) handle(conn *conn) error {
 		data, err := bufio.NewReader(conn).ReadString('\n')
 
 		if err == io.EOF {
-			fmt.Println("--end-of-file--")
 			return err
 		} else if err != nil {
-			fmt.Println("Oops! Some error occured!", err)
+			log.Printf("ошибка: %v", err)
 			return err
 		}
 
 		if strings.TrimSpace(string(data)) == "STOP" {
-			fmt.Println("Exiting TCP server!")
 			return nil
 		}
 		res := strings.ToUpper(string(data))
-		fmt.Print("-> ", res)
+		log.Printf("-> %v", res)
 		conn.Write([]byte(res))
 	}
 }
@@ -100,10 +93,10 @@ func (srv *Server) deleteConn(conn *conn) {
 }
 
 //Shutdown функция для корректного завершения всех обработчиков
-func (srv *Server) Shutdown() {
-	// should be guarded by mu
-	// тут мы сохраняем новое значение, пока сохранячем его остальныые горутины не должны получать доступ
+func (srv *Server) Shutdown(wg sync.WaitGroup) {
+	srv.mu.Lock()
 	srv.inShutdown = true
+	srv.mu.Unlock()
 	log.Println("shutting down...")
 	srv.listener.Close()
 	ticker := time.NewTicker(500 * time.Millisecond)
@@ -114,6 +107,7 @@ func (srv *Server) Shutdown() {
 			log.Printf("waiting on %v connections", len(srv.conns))
 		}
 		if len(srv.conns) == 0 {
+			wg.Done()
 			return
 		}
 	}
