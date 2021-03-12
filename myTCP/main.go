@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"sync"
 	"time"
 
@@ -26,8 +25,6 @@ func main() {
 	go srv.ListenAndServe()
 	time.Sleep(5 * time.Second)
 	// если вызвать без таймаута то почему то падает
-	srv.Shutdown(wg)
-	log.Println("IN555")
+	srv.Shutdown(&wg)
 	wg.Wait()
-	log.Println("IN666")
 }

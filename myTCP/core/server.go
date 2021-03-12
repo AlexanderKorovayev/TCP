@@ -93,12 +93,14 @@ func (srv *Server) deleteConn(conn *conn) {
 }
 
 //Shutdown функция для корректного завершения всех обработчиков
-func (srv *Server) Shutdown(wg sync.WaitGroup) {
+func (srv *Server) Shutdown(wg *sync.WaitGroup) {
 	srv.mu.Lock()
 	srv.inShutdown = true
 	srv.mu.Unlock()
 	log.Println("shutting down...")
-	srv.listener.Close()
+	if srv.listener != nil {
+		srv.listener.Close()
+	}
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 	for {
