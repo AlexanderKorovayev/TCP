@@ -23,7 +23,14 @@ type Server struct {
 }
 
 //ListenAndServe функция прослушивания подключений
-func (srv *Server) ListenAndServe() error {
+func (srv *Server) ListenAndServe(wg *sync.WaitGroup, maxWorkers int) error {
+	tasksCh := make(chan *conn)
+	// запустим воркеры для ожидания
+	// можно запускать динамически, но хочется попробовать задать их заранее
+	for i := 0; i < maxWorkers; i++ {
+		go srv.worker(tasksCh, wg)
+	}
+
 	port := srv.Port
 	listener, err := net.Listen("tcp", port)
 	if err != nil {
@@ -33,6 +40,7 @@ func (srv *Server) ListenAndServe() error {
 	srv.listener = listener
 	for {
 		if srv.inShutdown {
+			close(tasksCh)
 			break
 		}
 		newConn, err := listener.Accept()
@@ -46,9 +54,41 @@ func (srv *Server) ListenAndServe() error {
 		}
 		srv.trackConn(connObj)
 		connObj.SetDeadline(time.Now().Add(connObj.IdleTimeout))
-		go srv.handle(connObj)
+		tasksCh <- connObj
 	}
 	return nil
+}
+
+func (srv *Server) worker(tasksCh <-chan *conn, wg *sync.WaitGroup) {
+	//return errors.New("Not implemented handler")
+	for {
+		conn, ok := <-tasksCh
+		if !ok {
+			wg.Done()
+			return
+		}
+		for {
+			data, err := bufio.NewReader(conn).ReadString('\n')
+
+			if err == io.EOF {
+				log.Printf("конец строчки")
+				continue
+			} else if err != nil {
+				log.Printf("ошибка: %v", err)
+				break
+			}
+
+			if strings.TrimSpace(string(data)) == "STOP" {
+				log.Printf("закрыто соединение: %v", conn.RemoteAddr())
+				break
+			}
+			res := strings.ToUpper(string(data))
+			log.Printf("-> %v", res)
+			conn.Write([]byte(res))
+		}
+		conn.Close()
+		srv.deleteConn(conn)
+	}
 }
 
 func (srv *Server) trackConn(c *conn) {
@@ -58,32 +98,6 @@ func (srv *Server) trackConn(c *conn) {
 		srv.conns = make(map[*conn]struct{})
 	}
 	srv.conns[c] = struct{}{}
-}
-
-func (srv *Server) handle(conn *conn) error {
-	defer func() {
-		log.Printf("закрыто соединение: %v", conn.RemoteAddr())
-		conn.Close()
-		srv.deleteConn(conn)
-	}()
-	//return errors.New("Not implemented handler")
-	for {
-		data, err := bufio.NewReader(conn).ReadString('\n')
-
-		if err == io.EOF {
-			return err
-		} else if err != nil {
-			log.Printf("ошибка: %v", err)
-			return err
-		}
-
-		if strings.TrimSpace(string(data)) == "STOP" {
-			return nil
-		}
-		res := strings.ToUpper(string(data))
-		log.Printf("-> %v", res)
-		conn.Write([]byte(res))
-	}
 }
 
 func (srv *Server) deleteConn(conn *conn) {
@@ -109,7 +123,6 @@ func (srv *Server) Shutdown(wg *sync.WaitGroup) {
 			log.Printf("waiting on %v connections", len(srv.conns))
 		}
 		if len(srv.conns) == 0 {
-			wg.Done()
 			return
 		}
 	}

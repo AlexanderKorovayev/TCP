@@ -1,6 +1,7 @@
 package main
 
 import (
+	"runtime"
 	"sync"
 	"time"
 
@@ -17,15 +18,16 @@ import (
 //4) лишние зарпосы помещать в брокер сообщений
 
 func main() {
-	var wg sync.WaitGroup
-	wg.Add(1)
 	srv := core.Server{
 		Port:        ":2000",
 		IdleTimeout: 10 * time.Second,
 	}
-	go srv.ListenAndServe()
+	var wg sync.WaitGroup
+	// ограничим колличество воркеров возможностями процессора
+	maxWorkers := runtime.NumCPU()
+	wg.Add(maxWorkers)
+	go srv.ListenAndServe(&wg, maxWorkers)
 	time.Sleep(5 * time.Second)
-	// если вызвать без таймаута то почему то падает
 	srv.Shutdown(&wg)
 	wg.Wait()
 }
