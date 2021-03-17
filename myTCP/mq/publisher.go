@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"strings"
 
 	"github.com/streadway/amqp"
 )
@@ -26,12 +28,12 @@ func main() {
 	// with the instance and declare Queues that we can publish and
 	// subscribe to
 	q, err := ch.QueueDeclare(
-		"TestQueue",
-		false,
-		false,
-		false,
-		false,
-		nil,
+		"Test_Queue", // name
+		true,         // durable - не удалять сообщения если кролик упадёт
+		false,        // delete when unused
+		false,        // exclusive
+		false,        // no-wait
+		nil,          // arguments
 	)
 	// We can print out the status of our Queue here
 	// this will information like the amount of messages on
@@ -42,20 +44,31 @@ func main() {
 		log.Println(err)
 	}
 
-	// attempt to publish a message to the queue!
+	body := bodyFrom(os.Args)
 	err = ch.Publish(
-		"",
-		"TestQueue",
-		false,
+		"",     // exchange
+		q.Name, // routing key
+		false,  // mandatory
 		false,
 		amqp.Publishing{
-			ContentType: "text/plain",
-			Body:        []byte("Hello World"),
+			DeliveryMode: amqp.Persistent,
+			ContentType:  "text/plain",
+			Body:         []byte(body),
 		},
 	)
 
 	if err != nil {
 		log.Println(err)
 	}
-	log.Println("Successfully Published Message to Queue")
+	log.Printf(" [x] Sent %s", body)
+}
+
+func bodyFrom(args []string) string {
+	var s string
+	if (len(args) < 2) || os.Args[1] == "" {
+		s = "hello"
+	} else {
+		s = strings.Join(args[1:], " ")
+	}
+	return s
 }
