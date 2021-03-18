@@ -1,4 +1,4 @@
-package main
+package brockerr
 
 import (
 	"bytes"
@@ -8,9 +8,10 @@ import (
 	"github.com/streadway/amqp"
 )
 
-func main() {
+// Consumer разбор сообщений
+func Consumer() {
 	log.Println("Go RabbitMQ Tutorial")
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:8080/")
+	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil {
 		log.Println("Failed Initializing Broker Connection")
 		panic(err)
