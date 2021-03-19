@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/AlexanderKorovaev/TCP/myTCP/brokerr"
+	"github.com/AlexanderKorovaev/TCP/myTCP/broker"
 )
 
 //Server объект сервера
@@ -26,6 +26,7 @@ type Server struct {
 
 //ListenAndServe функция прослушивания подключений
 func (srv *Server) ListenAndServe(wg *sync.WaitGroup, maxWorkers int) error {
+	tasksCh := make(chan *conn)
 	// запустим воркеры для ожидания
 	// задания будут поступать в очередь, воркеры разбирают задачи из очереди
 	for i := 0; i < maxWorkers; i++ {
@@ -41,6 +42,7 @@ func (srv *Server) ListenAndServe(wg *sync.WaitGroup, maxWorkers int) error {
 	srv.listener = listener
 	for {
 		if srv.inShutdown {
+			close(tasksCh)
 			break
 		}
 		newConn, err := listener.Accept()
@@ -55,12 +57,13 @@ func (srv *Server) ListenAndServe(wg *sync.WaitGroup, maxWorkers int) error {
 		srv.trackConn(connObj)
 		connObj.SetDeadline(time.Now().Add(connObj.IdleTimeout))
 		// надо начитать данные и поместить их в очередь
-		brokerr.Publish([]byte("test"))
+		tasksCh <- connObj
+		broker.Publish([]byte("test"))
 	}
 	return nil
 }
 
-func (srv *Server) worker(wg *sync.WaitGroup) {
+func (srv *Server) worker(tasksCh <-chan *conn, wg *sync.WaitGroup) {
 	//return errors.New("Not implemented handler")
 	for {
 		conn, ok := <-tasksCh

@@ -1,4 +1,4 @@
-package brockerr
+package broker
 
 import (
 	"log"
