@@ -8,8 +8,6 @@ import (
 	"github.com/AlexanderKorovaev/TCP/myTCP/server/core"
 )
 
-// попробовать паттерн когда я подкладываю любой брокер сообщений вместо кролика
-
 func main() {
 	srv := core.Server{
 		Port:        ":2000",

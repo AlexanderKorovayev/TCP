@@ -7,6 +7,10 @@ import (
 	"github.com/streadway/amqp"
 )
 
+// шаблонный метод и инверсия зависимостей
+//https://refactoring.guru/ru/design-patterns/template-method/go/example
+//https://disk.yandex.ru/client/disk/Teory
+
 // Consumer разбор сообщений
 func Consumer() {
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
