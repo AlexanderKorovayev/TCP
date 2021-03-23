@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/AlexanderKorovaev/TCP/myTCP/broker"
+	"github.com/AlexanderKorovaev/TCP/myTCP/server/broker"
 )
 
 //Server объект сервера
@@ -30,7 +30,7 @@ func (srv *Server) ListenAndServe(wg *sync.WaitGroup, maxWorkers int) error {
 	// запустим воркеры для ожидания
 	// задания будут поступать в очередь, воркеры разбирают задачи из очереди
 	for i := 0; i < maxWorkers; i++ {
-		go srv.worker(wg)
+		go srv.worker(tasksCh, wg)
 	}
 
 	port := srv.Port
@@ -58,7 +58,6 @@ func (srv *Server) ListenAndServe(wg *sync.WaitGroup, maxWorkers int) error {
 		connObj.SetDeadline(time.Now().Add(connObj.IdleTimeout))
 		// надо начитать данные и поместить их в очередь
 		tasksCh <- connObj
-		broker.Publish([]byte("test"))
 	}
 	return nil
 }
@@ -92,6 +91,7 @@ func (srv *Server) worker(tasksCh <-chan *conn, wg *sync.WaitGroup) {
 		}
 		conn.Close()
 		srv.deleteConn(conn)
+		broker.Publish([]byte(conn.RemoteAddr().String()))
 	}
 }
 
