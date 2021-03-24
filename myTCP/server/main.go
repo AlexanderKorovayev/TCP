@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/AlexanderKorovaev/TCP/myTCP/server/broker"
+	"github.com/AlexanderKorovaev/TCP/myTCP/broker"
 	"github.com/AlexanderKorovaev/TCP/myTCP/server/core"
 )
 

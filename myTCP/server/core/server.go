@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/AlexanderKorovaev/TCP/myTCP/server/broker"
+	"github.com/AlexanderKorovaev/TCP/myTCP/broker"
 )
 
 //Server объект сервера

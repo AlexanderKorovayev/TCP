@@ -4,7 +4,7 @@
 package main
 
 import (
-	"github.com/AlexanderKorovaev/TCP/myTCP/server/broker"
+	"github.com/AlexanderKorovaev/TCP/myTCP/broker"
 )
 
 func main() {
