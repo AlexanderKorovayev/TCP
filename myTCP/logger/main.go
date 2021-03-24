@@ -8,5 +8,6 @@ import (
 )
 
 func main() {
-	broker.Consumer()
+	rabbit := broker.Rabbit{ConnPath: "amqp://guest:guest@localhost:5672/"}
+	rabbit.Consume()
 }

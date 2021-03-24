@@ -14,9 +14,9 @@ import (
 
 //Server объект сервера
 type Server struct {
-	Port         string
-	IdleTimeout  time.Duration
-	MaxReadBytes int64
+	Port        string
+	IdleTimeout time.Duration
+	Broker      broker.IBaseAMQP
 
 	listener   net.Listener
 	conns      map[*conn]struct{}
@@ -91,7 +91,7 @@ func (srv *Server) worker(tasksCh <-chan *conn, wg *sync.WaitGroup) {
 		}
 		conn.Close()
 		srv.deleteConn(conn)
-		broker.Publish([]byte(conn.RemoteAddr().String()))
+		srv.Broker.Publish([]byte(conn.RemoteAddr().String()))
 	}
 }
 
